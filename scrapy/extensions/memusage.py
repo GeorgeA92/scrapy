@@ -28,6 +28,7 @@ class MemoryUsage(object):
             # stdlib's resource module is only available on unix platforms.
             self.resource = import_module('resource')
         except ImportError:
+            logger.warning("MemoryUsage extension doesn't work on " + sys.platform +" platform")
             raise NotConfigured
 
         self.crawler = crawler
