@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', headers, body, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, errback, flags])
+.. autoclass:: Request
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -83,17 +83,21 @@ Request objects
         .. reqmeta:: dont_merge_cookies
 
         When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests. That's
-        the typical behaviour of any regular web browser. However, if, for some
-        reason, you want to avoid merging with existing cookies you can instruct
-        Scrapy to do so by setting the ``dont_merge_cookies`` key to True in the
-        :attr:`Request.meta`.
+        cookies for that domain and will be sent again in future requests.
+        That's the typical behaviour of any regular web browser.
 
-        Example of request without merging cookies::
+        To create a request that does not send stored cookies and does not
+        store received cookies, set the ``dont_merge_cookies`` key to ``True``
+        in :attr:`request.meta <scrapy.http.Request.meta>`.
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={'currency': 'USD', 'country': 'UY'},
-                                           meta={'dont_merge_cookies': True})
+        Example of a request that sends manually-defined cookies and ignores
+        cookie storage::
+
+            Request(
+                url="http://www.example.com",
+                cookies={'currency': 'USD', 'country': 'UY'},
+                meta={'dont_merge_cookies': True},
+            )
 
         For more info see :ref:`cookies-mw`.
     :type cookies: dict or list
@@ -125,6 +129,9 @@ Request objects
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
+
+    :param cb_kwargs: A dict with arbitrary data that will be passed as keyword arguments to the Request's callback.
+    :type cb_kwargs: dict
 
     .. attribute:: Request.url
 
@@ -165,6 +172,17 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
+    .. attribute:: Request.cb_kwargs
+
+        A dictionary that contains arbitrary metadata for this request. Its contents
+        will be passed to the Request's callback as keyword arguments. It is empty
+        for new Requests, which means by default callbacks only get a :class:`Response`
+        object as argument.
+
+        This dict is `shallow copied`_ when the request is cloned using the
+        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
+        spider, from the ``response.cb_kwargs`` attribute.
+
     .. _shallow copied: https://docs.python.org/2/library/copy.html
 
     .. method:: Request.copy()
@@ -172,13 +190,15 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, encoding, dont_filter, callback, errback])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       attribute :attr:`Request.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument). See also
+       :attr:`Request.cb_kwargs` and :attr:`Request.meta` attributes are shallow
+       copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
+
+    .. automethod:: from_curl
 
 .. _topics-request-response-ref-request-callback-arguments:
 
@@ -200,25 +220,31 @@ Example::
         self.logger.info("Visited %s", response.url)
 
 In some cases you may be interested in passing arguments to those callback
-functions so you can receive the arguments later, in the second callback. You
-can use the :attr:`Request.meta` attribute for that.
+functions so you can receive the arguments later, in the second callback.
+The following example shows how to achieve this by using the
+:attr:`Request.cb_kwargs` attribute:
 
-Here's an example of how to pass an item using this mechanism, to populate
-different fields from different pages::
+::
 
-    def parse_page1(self, response):
-        item = MyItem()
-        item['main_url'] = response.url
-        request = scrapy.Request("http://www.example.com/some_page.html",
-                                 callback=self.parse_page2)
-        request.meta['item'] = item
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        request.cb_kwargs['foo'] = 'bar'  # add more arguments for the callback
         yield request
 
-    def parse_page2(self, response):
-        item = response.meta['item']
-        item['other_url'] = response.url
-        yield item
+    def parse_page2(self, response, main_url, foo):
+        yield dict(
+            main_url=main_url,
+            other_url=response.url,
+            foo=foo,
+        )
 
+.. caution:: :attr:`Request.cb_kwargs` was introduced in version ``1.7``.
+   Prior to that, using :attr:`Request.meta` was recommended for passing
+   information around callbacks. After ``1.7``, :attr:`Request.cb_kwargs`
+   became the preferred way for handling user information, leaving :attr:`Request.meta`
+   for communication with components like middlewares and extensions.
 
 .. _topics-request-response-ref-errbacks:
 
@@ -374,7 +400,7 @@ fields with form data from :class:`Response` objects.
 
 .. class:: FormRequest(url, [formdata, ...])
 
-    The :class:`FormRequest` class adds a new argument to the constructor. The
+    The :class:`FormRequest` class adds a new keyword parameter to the constructor. The
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
@@ -513,19 +539,19 @@ method for this job. Here's an example spider which uses it::
 
             # continue scraping with authenticated session...
 
-JSONRequest
+JsonRequest
 -----------
 
-The JSONRequest class extends the base :class:`Request` class with functionality for
+The JsonRequest class extends the base :class:`Request` class with functionality for
 dealing with JSON requests.
 
-.. class:: JSONRequest(url, [... data, dumps_kwargs])
+.. class:: JsonRequest(url, [... data, dumps_kwargs])
 
-   The :class:`JSONRequest` class adds two new argument to the constructor. The
+   The :class:`JsonRequest` class adds two new keyword parameters to the constructor. The
    remaining arguments are the same as for the :class:`Request` class and are
    not documented here.
 
-   Using the :class:`JSONRequest` will set the ``Content-Type`` header to ``application/json``
+   Using the :class:`JsonRequest` will set the ``Content-Type`` header to ``application/json``
    and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
@@ -540,7 +566,7 @@ dealing with JSON requests.
 
 .. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
-JSONRequest usage example
+JsonRequest usage example
 -------------------------
 
 Sending a JSON POST request with a JSON payload::
@@ -549,13 +575,13 @@ Sending a JSON POST request with a JSON payload::
        'name1': 'value1',
        'name2': 'value2',
    }
-   yield JSONRequest(url='http://www.example.com/post/action', data=data)
+   yield JsonRequest(url='http://www.example.com/post/action', data=data)
 
 
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers=None, body=b'', flags=None, request=None])
+.. autoclass:: Response
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.

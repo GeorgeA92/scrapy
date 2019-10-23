@@ -85,8 +85,10 @@ DOWNLOADER = 'scrapy.core.downloader.Downloader'
 
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
+DOWNLOADER_CLIENT_TLS_CIPHERS = 'DEFAULT'
 DOWNLOADER_CLIENT_TLS_METHOD = 'TLS' # Use highest TLS/SSL protocol version supported by the platform,
                                      # also allowing negotiation
+DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
 DOWNLOADER_MIDDLEWARES = {}
 
@@ -158,6 +160,7 @@ FEED_EXPORTERS_BASE = {
 }
 FEED_EXPORT_INDENT = 0
 
+FEED_STORAGE_FTP_ACTIVE = False
 FEED_STORAGE_S3_ACL = ''
 
 FILES_STORE_S3_ACL = 'private'
@@ -221,6 +224,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
+METAREFRESH_IGNORE_TAGS = ['script', 'noscript']
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
@@ -242,6 +246,8 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
+ROBOTSTXT_PARSER = 'scrapy.robotstxt.ProtegoRobotParser'
+ROBOTSTXT_USER_AGENT = None
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
@@ -285,6 +291,7 @@ TELNETCONSOLE_PASSWORD = None
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
     'scrapy.contracts.default.UrlContract': 1,
+    'scrapy.contracts.default.CallbackKeywordArgumentsContract': 1,
     'scrapy.contracts.default.ReturnsContract': 2,
     'scrapy.contracts.default.ScrapesContract': 3,
 }

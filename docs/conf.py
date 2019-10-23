@@ -30,6 +30,7 @@ extensions = [
     'scrapydocs',
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -73,6 +74,8 @@ language = 'en'
 
 # List of documents that shouldn't be included in the build.
 #unused_docs = []
+
+exclude_patterns = ['build']
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
@@ -237,4 +240,37 @@ coverage_ignore_pyobjects = [
     # their constructor, the methods they reimplement to achieve that purpose
     # should be irrelevant to developers using those contracts.
     r'\w+Contract\.(adjust_request_args|(pre|post)_process)$',
+
+    # Methods of downloader middlewares are not documented, only the classes
+    # themselves, since downloader middlewares are controlled through Scrapy
+    # settings.
+    r'^scrapy\.downloadermiddlewares\.\w*?\.(\w*?Middleware|DownloaderStats)\.',
+
+    # Base classes of downloader middlewares are implementation details that
+    # are not meant for users.
+    r'^scrapy\.downloadermiddlewares\.\w*?\.Base\w*?Middleware',
+
+    # Private exception used by the command-line interface implementation.
+    r'^scrapy\.exceptions\.UsageError',
+
+    # Methods of BaseItemExporter subclasses are only documented in
+    # BaseItemExporter.
+    r'^scrapy\.exporters\.(?!BaseItemExporter\b)\w*?\.',
+
+    # Extension behavior is only modified through settings. Methods of
+    # extension classes, as well as helper functions, are implementation
+    # details that are not documented.
+    r'^scrapy\.extensions\.[a-z]\w*?\.[A-Z]\w*?\.',  # methods
+    r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
+
+    # Never documented before, and deprecated now.
+    r'^scrapy\.item\.DictItem$',
 ]
+
+
+# Options for the InterSphinx extension
+# -------------------------------------
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}

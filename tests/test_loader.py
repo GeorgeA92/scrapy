@@ -456,6 +456,42 @@ class BasicItemLoaderTest(unittest.TestCase):
             'title': [u'Test item title 3', u'Test item 4'],
         })
 
+    def test_error_input_processor(self):
+        class TestItem(Item):
+            name = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+            name_in = MapCompose(float)
+
+        il = TestItemLoader()
+        self.assertRaises(ValueError, il.add_value, 'name',
+                          [u'marta', u'other'])
+
+    def test_error_output_processor(self):
+        class TestItem(Item):
+            name = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+            name_out = Compose(Join(), float)
+
+        il = TestItemLoader()
+        il.add_value('name', u'marta')
+        with self.assertRaises(ValueError):
+            il.load_item()
+
+    def test_error_processor_as_argument(self):
+        class TestItem(Item):
+            name = Field()
+
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+
+        il = TestItemLoader()
+        self.assertRaises(ValueError, il.add_value, 'name',
+                          [u'marta', u'other'], Compose(float))
+
 
 class ProcessorsTest(unittest.TestCase):
 
@@ -482,13 +518,22 @@ class ProcessorsTest(unittest.TestCase):
         proc = Compose(str.upper)
         self.assertEqual(proc(None), None)
         proc = Compose(str.upper, stop_on_none=False)
-        self.assertRaises(TypeError, proc, None)
+        self.assertRaises(ValueError, proc, None)
+        proc = Compose(str.upper, lambda x: x + 1)
+        self.assertRaises(ValueError, proc, 'hello')
 
     def test_mapcompose(self):
         filter_world = lambda x: None if x == 'world' else x
         proc = MapCompose(filter_world, six.text_type.upper)
         self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
+        proc = MapCompose(filter_world, six.text_type.upper)
+        self.assertEqual(proc(None), [])
+        proc = MapCompose(filter_world, six.text_type.upper)
+        self.assertRaises(ValueError, proc, [1])
+        proc = MapCompose(filter_world, lambda x: x + 1)
+        self.assertRaises(ValueError, proc, 'hello')
+
 
 
 class SelectortemLoaderTest(unittest.TestCase):
@@ -646,7 +691,7 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertTrue(l.selector)
         l.add_css('url', 'a::attr(href)')
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
-        l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
+        l.replace_css('url', 'a::attr(href)', re=r'http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
 

@@ -157,6 +157,8 @@ To access all populated values, just use the typical `dict API`_::
     [('price', 1000), ('name', 'Desktop PC')]
 
 
+.. _copying-items:
+
 Copying items
 -------------
 
@@ -235,8 +237,12 @@ Item objects
 
     Return a new Item optionally initialized from the given argument.
 
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
+    Items replicate the standard `dict API`_, including its constructor, and
+    also provide the following additional API members:
+
+    .. automethod:: copy
+
+    .. automethod:: deepcopy
 
     .. attribute:: fields
 
@@ -261,3 +267,9 @@ Field objects
 .. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 
+Other classes related to Item
+=============================
+
+.. autoclass:: BaseItem
+
+.. autoclass:: ItemMeta
