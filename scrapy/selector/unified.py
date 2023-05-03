@@ -10,6 +10,11 @@ from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
 
+_root_default = None
+if hasattr(_ParselSelector, 'jmespath'):
+    from parsel.selector import _NOT_SET
+    _root_default = _NOT_SET
+
 
 def _st(response, st):
     if st is None:
@@ -63,7 +68,7 @@ class Selector(_ParselSelector, object_ref):
     __slots__ = ["response"]
     selectorlist_cls = SelectorList
 
-    def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
+    def __init__(self, response=None, text=None, type=None, root=_root_default, **kwargs):
         if response is not None and text is not None:
             raise ValueError(
                 f"{self.__class__.__name__}.__init__() received "
